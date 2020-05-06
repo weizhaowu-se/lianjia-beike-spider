@@ -15,11 +15,13 @@ from lib.utility.path import *
 from lib.zone.area import *
 from lib.utility.log import *
 import lib.utility.version
+import pymysql
 
+pymysql.install_as_MySQLdb()
 
 class ErShouSpider(BaseSpider):
-    def collect_area_ershou_data(self, city_name, area_name, fmt="csv"):
-        """
+    def collect_area_ershou_data(self, city_name, area_name, fmt="mysql"):
+        self.none_ = """
         对于每个板块,获得这个板块下所有二手房的信息
         并且将这些信息写入文件保存
         :param city_name: 城市
@@ -41,6 +43,18 @@ class ErShouSpider(BaseSpider):
                 for ershou in ershous:
                     # print(date_string + "," + xiaoqu.text())
                     f.write(self.date_string + "," + ershou.text() + "\n")
+            # 写入数据库
+            if fmt == 'mysql':
+                import records
+                db = records.Database('mysql://root:password@localhost/lianjia?charset=utf8', encoding='utf-8')
+                for ershou in ershous:
+                    db.query('INSERT INTO ershou (district, area, price, name, `desc`, pic, lianjia_id, date) '
+                             'VALUES(:district, :area, :price, :name, :desc, :pic, :lianjia_id, :date)',
+                             district=ershou.district, area=ershou.area, price=ershou.price, name=ershou.name,
+                             desc=ershou.desc,
+                             pic=ershou.pic,
+                             lianjia_id=ershou.id,
+                             date=self.date_string)
         print("Finish crawl area: " + area_name + ", save data to : " + csv_file)
 
     @staticmethod
@@ -93,17 +107,22 @@ class ErShouSpider(BaseSpider):
                 desc = house_elem.find('div', class_="houseInfo")
                 pic = house_elem.find('a', class_="img").find('img', class_="lj-lazy")
 
+                id = house_elem.find('div', class_='title').find(name='a').get('href')
+
                 # 继续清理数据
                 price = price.text.strip()
                 name = name.text.replace("\n", "")
                 desc = desc.text.replace("\n", "").strip()
                 pic = pic.get('data-original').strip()
+                id = id[id.rfind('/') + 1 : id.rfind('.')]
                 # print(pic)
 
 
                 # 作为对象保存
-                ershou = ErShou(chinese_district, chinese_area, name, price, desc, pic)
+                ershou = ErShou(chinese_district, chinese_area, name, price, desc, pic, id)
                 ershou_list.append(ershou)
+                # 测试 返回
+                return ershou_list
         return ershou_list
 
     def start(self):
@@ -114,6 +133,8 @@ class ErShouSpider(BaseSpider):
 
         # 获得城市有多少区列表, district: 区县
         districts = get_districts(city)
+        # 测试需要，只取第一个区县
+        districts = districts[0 : 1]
         print('City: {0}'.format(city))
         print('Districts: {0}'.format(districts))
 
@@ -121,6 +142,8 @@ class ErShouSpider(BaseSpider):
         areas = list()
         for district in districts:
             areas_of_district = get_areas(city, district)
+            # 测试需要 只取第一个
+            areas_of_district = areas_of_district[2:3]
             print('{0}: Area list:  {1}'.format(district, areas_of_district))
             # 用list的extend方法,L1.extend(L2)，该方法将参数L2的全部元素添加到L1的尾部
             areas.extend(areas_of_district)
