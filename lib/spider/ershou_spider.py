@@ -46,9 +46,9 @@ class ErShouSpider(BaseSpider):
             # 写入数据库
             if fmt == 'mysql':
                 import records
-                db = records.Database('mysql://root:password@localhost/lianjia?charset=utf8', encoding='utf-8')
+                db = records.Database('mysql://root:password@192.168.8.152/lianjia?charset=utf8', encoding='utf-8')
                 for ershou in ershous:
-                    db.query('INSERT INTO ershou (district, area, price, name, `desc`, pic, lianjia_id, date) '
+                    db.query('INSERT INTO ershou2 (district, area, price, name, description, pic, lianjia_id, date) '
                              'VALUES(:district, :area, :price, :name, :desc, :pic, :lianjia_id, :date)',
                              district=ershou.district, area=ershou.area, price=ershou.price, name=ershou.name,
                              desc=ershou.desc,
@@ -122,7 +122,7 @@ class ErShouSpider(BaseSpider):
                 ershou = ErShou(chinese_district, chinese_area, name, price, desc, pic, id)
                 ershou_list.append(ershou)
                 # 测试 返回
-                return ershou_list
+                # return ershou_list
         return ershou_list
 
     def start(self):
@@ -134,7 +134,7 @@ class ErShouSpider(BaseSpider):
         # 获得城市有多少区列表, district: 区县
         districts = get_districts(city)
         # 测试需要，只取第一个区县
-        districts = districts[0 : 1]
+        # districts = districts[0 : 1]
         print('City: {0}'.format(city))
         print('Districts: {0}'.format(districts))
 
@@ -143,7 +143,7 @@ class ErShouSpider(BaseSpider):
         for district in districts:
             areas_of_district = get_areas(city, district)
             # 测试需要 只取第一个
-            areas_of_district = areas_of_district[2:3]
+            # areas_of_district = areas_of_district[2:3]
             print('{0}: Area list:  {1}'.format(district, areas_of_district))
             # 用list的extend方法,L1.extend(L2)，该方法将参数L2的全部元素添加到L1的尾部
             areas.extend(areas_of_district)
